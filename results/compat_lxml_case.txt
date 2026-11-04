@@ -1,0 +1,15 @@
+after `import lxml` gil=False; before: 0.067s gil=False  after: 0.581s gil=True
+after `import lxml` gil=False; before: 0.071s gil=False  after: 0.579s gil=True
+after `import lxml` gil=False; before: 0.068s gil=False  after: 0.579s gil=True
+after `import lxml` gil=False; before: 0.067s gil=False  after: 0.575s gil=True
+after `import lxml` gil=False; before: 0.067s gil=False  after: 0.581s gil=True
+crash shared run 1 exit=139
+crash shared run 2 exit=139
+crash shared run 3 exit=139
+crash shared run 4 exit=139
+crash shared run 5 exit=139
+crash private run 1 exit=0
+crash private run 2 exit=0
+crash private run 3 exit=0
+crash private run 4 exit=0
+crash private run 5 exit=0
