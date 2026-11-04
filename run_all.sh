@@ -14,6 +14,8 @@
 #   tiny     many short tasks; one reused pool vs a new pool per batch. (#4)
 #   shared_lists, tiny_batched   follow-ups for two confounds (run by name)
 #   slowdown, memcheck           single-thread cost; memory method check (run by name)
+#   forkfaults                   page faults behind fork's slow first pass (run by name)
+#   buildconfig                  configure flags of both builds (run by name)
 #
 # Every run goes through memwatch.py, which reads the kernel peak memory of the
 # run (cgroup memory.peak) afterwards, so nothing samples the benchmark process.
@@ -209,6 +211,19 @@ exp_memcheck() {
   check "FT list w=16"    "$PYT" "${b[@]}" --mode threads --variant list --workers 16
   check "FT tuple w=16"   "$PYT" "${b[@]}" --mode threads --variant tuple --workers 16
   echo "memcheck done -> $out"
+}
+
+# Page faults per pass: why fork is slower than forkserver in the first bigdata/arg pass.
+exp_forkfaults() {
+  "$PY" forkfaults.py 3 > results/forkfaults.csv
+  echo "forkfaults done -> results/forkfaults.csv"
+}
+
+# The configure flags each interpreter was built with.
+exp_buildconfig() {
+  local cfg='import sysconfig; print(sysconfig.get_config_var("CONFIG_ARGS"))'
+  { echo "# GIL build"; "$PY" -I -c "$cfg"; echo "# free-threaded build"; "$PYT" -I -c "$cfg"; } > results/build_config.txt
+  echo "buildconfig done -> results/build_config.txt"
 }
 
 for e in "${EXPS[@]}"; do "exp_$e"; done

@@ -11,7 +11,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-BLUE, ORANGE, AQUA, YELLOW, MAGENTA, VIOLET = "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"
+# Free-threaded is near-black, not a hue: it must stand out from every process
+# line, including in greyscale. Tuple vs list is the same colour, dashed.
+BLUE, AQUA, YELLOW, MAGENTA, FREE = "#2a78d6", "#1baf7a", "#eda100", "#e87ba4", "#1f1e1c"
 INK2, MUTED, GRID, SURFACE = "#52514e", "#898781", "#e6e5e1", "#fcfcfb"
 plt.rcParams.update({
     "font.family": "sans-serif",
@@ -48,8 +50,8 @@ def style(ax, xs, xlabel):
     ax.set_xlabel(xlabel)
 
 
-def line(ax, xs, ys, label, color, marker):
-    ax.plot(xs, ys, color=color, marker=marker, markersize=6, linewidth=2, label=label,
+def line(ax, xs, ys, label, color, marker, style="-"):
+    ax.plot(xs, ys, color=color, marker=marker, markersize=6, linewidth=2, label=label, linestyle=style,
             markeredgecolor=SURFACE, markeredgewidth=1, zorder=3)
 
 
@@ -69,7 +71,7 @@ def fig1():
         ("Processes, fork", ("gil", "processes", "-", "fork"), AQUA, "^"),
         ("Processes, forkserver", ("gil", "processes", "-", "forkserver"), YELLOW, "D"),
         ("Processes, spawn", ("gil", "processes", "-", "spawn"), MAGENTA, "v"),
-        ("Threads, free-threaded build", ("free-threaded", "threads", "-", ""), ORANGE, "s"),
+        ("Threads, free-threaded build", ("free-threaded", "threads", "-", ""), FREE, "s"),
     ]
     fig, (a, b) = plt.subplots(1, 2, figsize=(8.2, 3.45), facecolor=SURFACE)
     for ax in (a, b):
@@ -85,7 +87,7 @@ def fig1():
     a.set_ylim(0, 16.5)
     a.set_yticks([0, 4, 8, 12, 16])
     b.set_title("Peak memory (lower is better)", loc="left", fontsize=10)
-    b.set_ylabel("Peak memory (MB)")
+    b.set_ylabel("Peak memory (MiB)")
     b.set_ylim(bottom=0)
     finish(fig, a, "fig1_primes.png", 3)
 
@@ -94,21 +96,21 @@ def fig2():
     d = load("bigdata")
     sizes = [10, 100, 500]
     setups = [
-        ("Threads, GIL build (list)", ("gil", "threads", "list", ""), BLUE, "o"),
-        ("Free-threaded (list)", ("free-threaded", "threads", "list", ""), ORANGE, "s"),
-        ("Free-threaded (tuple)", ("free-threaded", "threads", "tuple", ""), VIOLET, "P"),
-        ("Fork + initializer", ("gil", "processes", "init", "fork"), AQUA, "^"),
-        ("Forkserver, data with each task", ("gil", "processes", "arg", "forkserver"), YELLOW, "D"),
-        ("Spawn + initializer", ("gil", "processes", "init", "spawn"), MAGENTA, "v"),
+        ("Threads, GIL build (list)", ("gil", "threads", "list", ""), BLUE, "o", "-"),
+        ("Free-threaded (list)", ("free-threaded", "threads", "list", ""), FREE, "s", "-"),
+        ("Free-threaded (tuple)", ("free-threaded", "threads", "tuple", ""), FREE, "P", "--"),
+        ("Fork + initializer", ("gil", "processes", "init", "fork"), AQUA, "^", "-"),
+        ("Forkserver, data with each task", ("gil", "processes", "arg", "forkserver"), YELLOW, "D", "-"),
+        ("Spawn + initializer", ("gil", "processes", "init", "spawn"), MAGENTA, "v", "-"),
     ]
     fig, (a, b) = plt.subplots(1, 2, figsize=(8.2, 3.45), facecolor=SURFACE)
     for ax in (a, b):
         style(ax, sizes, "Size of shared data (MiB)")
         ax.set_yscale("log")
-    for label, key, color, marker in setups:
+    for label, key, color, marker, dash in setups:
         rows = [d[(*key, 16, s)] for s in sizes]
-        line(a, sizes, [r[0] for r in rows], label, color, marker)
-        line(b, sizes, [r[1] for r in rows], label, color, marker)
+        line(a, sizes, [r[0] for r in rows], label, color, marker, dash)
+        line(b, sizes, [r[1] for r in rows], label, color, marker, dash)
     a.set_yticks([0.01, 0.1, 1, 10])
     a.set_yticklabels(["0.01", "0.1", "1", "10"])
     b.set_yticks([100, 1000, 10000])
@@ -118,7 +120,7 @@ def fig2():
     a.set_title("Total time, three passes (lower is better)", loc="left", fontsize=10)
     a.set_ylabel("Seconds, log scale")
     b.set_title("Peak memory (lower is better)", loc="left", fontsize=10)
-    b.set_ylabel("MB, log scale")
+    b.set_ylabel("MiB, log scale")
     finish(fig, a, "fig2_bigdata.png", 3)
 
 

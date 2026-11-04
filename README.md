@@ -15,7 +15,7 @@ Compares, on four pure-Python workloads:
 | `tiny`    | many short tasks; one reused pool vs a new pool per batch, chunksize 1 vs a sensible chunksize | #4 |
 
 Wall time includes pool creation and shutdown, so process start-up cost is
-counted. Peak memory is the kernel's cgroup `memory.peak` for the benchmark and all
+counted. Sequential runs are a plain loop with no pool. Peak memory, in MiB, is the kernel's cgroup `memory.peak` for the benchmark and all
 its descendants: `memwatch.py` runs each benchmark in its own systemd user scope and
 reads the value afterwards. Nothing samples the benchmark while it runs, and pages
 shared by several processes count once. Sampling PSS (the draft's method) missed
@@ -32,7 +32,7 @@ Your system Python is not touched. `uv` installs 3.14 and 3.14t into your home f
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh    # once, if you don't have uv
-cd ftbench
+cd freethreaded-vs-multiprocessing
 ./run_all.sh                     # all experiments, writes results/<experiment>.csv
 ./run_all.sh primes bigdata      # or just some
 python3 analyze.py               # median tables + sanity checks
@@ -50,10 +50,36 @@ python3.14 memwatch.py -- python3.14 -I bench.py --workload bigdata \
 `results.csv` / `plot.py` / `speedup.png` are the first experiment from the
 draft (in-process memory sampler, forkserver only), kept as they were.
 
+`results/v1_sampled_pss/` holds the first full run, measured with the sampled PSS
+method the paper rejects. It is kept to show that comparison; the paper uses no
+other number from it.
+
 `figures.py` draws the paper's figures from `results/` (`fig1_primes.png`, `fig2_bigdata.png`).
 
 `slowdown.py` times single operations in one thread on each build, for the
 single-thread slowdown. `compat.py` is the library compatibility study.
+`forkfaults.py` counts page faults per pass, to explain why the first pass under
+fork is slower when data is sent with each task.
+
+## Where each paper result comes from
+
+| Paper | Data in `results/` | Made by |
+|---|---|---|
+| Table 1, Fig. 1 | `primes.csv` | `./run_all.sh primes` |
+| Table 2, Fig. 2 | `bigdata.csv` | `./run_all.sh bigdata` |
+| Fork first-pass faults | `forkfaults.csv` | `./run_all.sh forkfaults` |
+| Table 3 | `shared.csv`, `shared_lists.csv` | `./run_all.sh shared shared_lists` |
+| Table 4 | `tiny_batched.csv`; pool cost and unchunked times from `tiny.csv` | `./run_all.sh tiny tiny_batched` |
+| Single-thread overhead | `slowdown.csv`, `primes.csv`, `bigdata.csv` | `./run_all.sh slowdown` |
+| Table 5 | `compat.jsonl`, `top-pypi-snapshot.json` | `python3 compat.py --work <scratch dir>` |
+| `lxml` case | `compat_lxml_case.txt` | `compat_lxml_case.py` |
+| Rejecting sampled memory | `mem_validation.txt` | `./run_all.sh memcheck` |
+| Build flags | `build_config.txt` | `./run_all.sh buildconfig` |
+
+`compat.py` installs packages from PyPI, so it needs network access and a scratch
+folder (`--work`). The other experiments are local. The 16 packages beyond the top
+100 are the entries in `compat_probe.py`'s `SMOKES` that are not in the snapshot's
+top 100.
 
 ## For clean numbers
 
