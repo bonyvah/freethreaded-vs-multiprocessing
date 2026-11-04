@@ -14,6 +14,7 @@
 #   tiny     many short tasks; one reused pool vs a new pool per batch. (#4)
 #   shared_lists, tiny_batched   follow-ups for two confounds (run by name)
 #   slowdown, memcheck           single-thread cost; memory method check (run by name)
+#   bigdata_repeat, scancost     30 repeats of the headline setups; scan loop cost (run by name)
 #   forkfaults                   page faults behind fork's slow first pass (run by name)
 #   buildconfig                  configure flags of both builds (run by name)
 #
@@ -211,6 +212,29 @@ exp_memcheck() {
   check "FT list w=16"    "$PYT" "${b[@]}" --mode threads --variant list --workers 16
   check "FT tuple w=16"   "$PYT" "${b[@]}" --mode threads --variant tuple --workers 16
   echo "memcheck done -> $out"
+}
+
+# 30 repeats of the setups behind the headline ratios, since one slow run moves a 0.06 s setup a lot.
+exp_bigdata_repeat() {
+  local REPEATS=30 b=(--workload bigdata --size 500 --workers "$MAXW")
+  start bigdata_repeat 3
+  for r in $(seq "$REPEATS"); do
+    run "$PYT" "${b[@]}" --mode threads --variant tuple
+    run "$PYT" "${b[@]}" --mode threads --variant list
+    run "$PY"  "${b[@]}" --mode processes --variant init --start-method fork
+  done
+}
+
+# The scan loop one operation at a time, on both builds.
+exp_scancost() {
+  local out=results/scancost.csv
+  echo "build,size_mib,kernel,median_ns_per_record,first_ns_per_record,spread_pct" > "$out"
+  for r in 1 2 3; do
+    "$PY"  scancost.py | tail -n +2 >> "$out"
+    "$PYT" scancost.py | tail -n +2 >> "$out"
+  done
+  { "$PY" scancost.py --ops; "$PYT" scancost.py --ops; } > results/scancost_ops.txt
+  echo "scancost done -> $out"
 }
 
 # Page faults per pass: why fork is slower than forkserver in the first bigdata/arg pass.

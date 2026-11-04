@@ -58,6 +58,9 @@ other number from it.
 
 `slowdown.py` times single operations in one thread on each build, for the
 single-thread slowdown. `compat.py` is the library compatibility study.
+`scancost.py` times the scan loop one operation at a time, on real records and on
+records sharing one float and string, to find the cost of scanning data on the
+free-threaded build.
 `forkfaults.py` counts page faults per pass, to explain why the first pass under
 fork is slower when data is sent with each task.
 
@@ -67,10 +70,11 @@ fork is slower when data is sent with each task.
 |---|---|---|
 | Table 1, Fig. 1 | `primes.csv` | `./run_all.sh primes` |
 | Table 2, Fig. 2 | `bigdata.csv` | `./run_all.sh bigdata` |
+| 30-repeat headline ratios | `bigdata_repeat.csv` | `./run_all.sh bigdata_repeat` |
 | Fork first-pass faults | `forkfaults.csv` | `./run_all.sh forkfaults` |
 | Table 3 | `shared.csv`, `shared_lists.csv` | `./run_all.sh shared shared_lists` |
 | Table 4 | `tiny_batched.csv`; pool cost and unchunked times from `tiny.csv` | `./run_all.sh tiny tiny_batched` |
-| Single-thread overhead | `slowdown.csv`, `primes.csv`, `bigdata.csv` | `./run_all.sh slowdown` |
+| Single-thread overhead | `slowdown.csv`, `primes.csv`, `bigdata.csv`, `scancost.csv`, `scancost_ops.txt` | `./run_all.sh slowdown scancost` |
 | Table 5 | `compat.jsonl`, `top-pypi-snapshot.json` | `python3 compat.py --work <scratch dir>` |
 | `lxml` case | `compat_lxml_case.txt` | `compat_lxml_case.py` |
 | Rejecting sampled memory | `mem_validation.txt` | `./run_all.sh memcheck` |
